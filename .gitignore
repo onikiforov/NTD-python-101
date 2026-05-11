@@ -1,4 +1,9 @@
 .env
+.env.*
+!.env.example
+*.env
+.env~
+.env.bak
 .venv/
 __pycache__/
 *.pyc
@@ -7,3 +12,5 @@ allure-results/
 allure-report/
 logs/
 .DS_Store
+.claude/
+CLAUDE.md
