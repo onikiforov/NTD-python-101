@@ -12,6 +12,15 @@
 
 - A **Taiga.io account** you own (register free at taiga.io).
 - **One project pre-created** in the Taiga web UI. Copy its numeric ID into `.env` as `TAIGA_PROJECT_ID`. Tests use this project as the parent for all User Story CRUD operations — they never create a new project automatically.
+
+  **How to find your project ID:**
+  1. Open your project in the Taiga web UI — the URL looks like `https://taiga.io/project/my-project-slug/`.
+  2. Copy the slug (the `my-project-slug` part).
+  3. Run:
+     ```bash
+     curl -s https://api.taiga.io/api/v1/projects/by_slug?slug=my-project-slug | python3 -m json.tool | grep -m 1 '"id"'
+     ```
+  4. The `"id"` value is your project ID. Put it in `.env` as `TAIGA_PROJECT_ID=<number>`.
 - **`uv`** installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`).
 - **Allure CLI** installed (see [Allure docs](https://allurereport.org/docs/install/)).
 
