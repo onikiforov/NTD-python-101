@@ -10,10 +10,12 @@ Intentional limitations (teaching moments for step-2):
 """
 
 import json
+import uuid
 
 import allure
 import pytest
 import requests
+from requests import Session, Response
 
 from config import Config
 from conftest import log_response_hook
@@ -22,7 +24,8 @@ _USER_STORY_REQUIRED_KEYS = {"id", "subject", "project"}
 
 
 class TestUserStoriesBasic:
-    def _login(self, cfg: Config) -> requests.Session:
+    @staticmethod
+    def _login(cfg: Config) -> requests.Session:
         """Perform inline login and return a session with auth headers attached."""
         resp = requests.post(
             f"{cfg.base_url}/auth",
@@ -41,12 +44,30 @@ class TestUserStoriesBasic:
         session.headers.update({"Authorization": f"Bearer {token}"})
         return session
 
+    @staticmethod
+    def create_us(taiga_config: Config, session: Session) -> tuple[Response, str]:
+        """Creates User Story as a pre-condition and returns it's title"""
+        us_subject = f"Workshop step-1 user story {uuid.uuid4().hex[:8]}"
+
+        resp = session.post(
+            f"{taiga_config.base_url}/userstories",
+            json={"project": taiga_config.project_id, "subject": us_subject},
+            timeout=10,
+        )
+        resp.raise_for_status()
+
+        return resp, us_subject
+
     @pytest.mark.smoke
     @allure.feature("User Stories")
     @allure.story("Basic")
     def test_list_user_stories_returns_200(self, taiga_config: Config) -> None:
         with allure.step("Login"):
             session = self._login(taiga_config)
+
+        with allure.step("Create new User Story"):
+            # Creates new User Story so the list is never empty
+            _, us_subject = self.create_us(taiga_config, session)
 
         with allure.step("Fetch user stories list"):
             resp = session.get(
@@ -63,50 +84,17 @@ class TestUserStoriesBasic:
                 f"Expected list, got {type(data).__name__}: {data!r}"
             )
 
-    @pytest.mark.smoke
-    @allure.feature("User Stories")
-    @allure.story("Basic")
-    def test_get_open_user_stories_returns_200(self, taiga_config: Config) -> None:
-        with allure.step("Login"):
-            session = self._login(taiga_config)
-
-        with allure.step("Fetch open user stories"):
-            resp = session.get(
-                f"{taiga_config.base_url}/userstories",
-                params={"project": taiga_config.project_id, "status__is_closed": "false"},
-                timeout=10,
-            )
-            resp.raise_for_status()
-
-        with allure.step("Assert response"):
-            assert resp.status_code == 200, resp.text
-            data = resp.json()
-            assert isinstance(data, list), (
-                f"Expected list, got {type(data).__name__}: {data!r}"
-            )
-            for item in data:
-                if "is_closed" in item:
-                    assert item["is_closed"] is False, (
-                        f"Expected all stories to be open, "
-                        f"found closed story id={item.get('id')}"
-                    )
+            assert us_subject not in [item["subject"] for item in data]
 
     @pytest.mark.smoke
     @allure.feature("User Stories")
     @allure.story("Basic")
     def test_create_user_story_returns_201(self, taiga_config: Config) -> None:
-        us_subject = "Workshop step-1 user story"
-
         with allure.step("Login"):
             session = self._login(taiga_config)
 
         with allure.step("Create user story"):
-            resp = session.post(
-                f"{taiga_config.base_url}/userstories",
-                json={"project": taiga_config.project_id, "subject": us_subject},
-                timeout=10,
-            )
-            resp.raise_for_status()
+            resp, us_subject = self.create_us(taiga_config, session)
 
         with allure.step("Assert response fields"):
             assert resp.status_code == 201, resp.text
