@@ -120,6 +120,11 @@ def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     os.chmod(log_file, 0o600)
 
 
+@pytest.fixture(scope="session")
+def taiga_config():
+    return load_config()
+
+
 def log_response_hook(
     response: requests.Response, *_args: object, **_kwargs: object
 ) -> None:
