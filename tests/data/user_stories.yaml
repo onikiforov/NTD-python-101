@@ -1,0 +1,9 @@
+user_stories:
+  - subject: "As a user, I want to log in so I can access my data"
+  - subject: "As an admin, I want to view reports to monitor usage"
+    description: "Detailed description for the admin reporting feature"
+  - subject: "As a user, I want to reset my password via email"
+    tags: ["workshop", "step2"]
+  - subject: "Short US subject for boundary check"
+    description: "Optional description"
+    tags: ["step2"]

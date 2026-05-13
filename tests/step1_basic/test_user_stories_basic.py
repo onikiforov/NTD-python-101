@@ -84,7 +84,7 @@ class TestUserStoriesBasic:
                 f"Expected list, got {type(data).__name__}: {data!r}"
             )
 
-            assert us_subject not in [item["subject"] for item in data]
+            assert us_subject in [item["subject"] for item in data]
 
     @pytest.mark.smoke
     @allure.feature("User Stories")

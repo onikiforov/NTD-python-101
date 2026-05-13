@@ -4,13 +4,15 @@ import logging.config
 import os
 import re
 import time
+import uuid
+from collections.abc import Callable, Generator
 from pathlib import Path
 from typing import Any
 
 import pytest
 import requests
 
-from config import load_config
+from config import Config, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +123,7 @@ def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
 
 
 @pytest.fixture(scope="session")
-def taiga_config():
+def taiga_config() -> Config:
     return load_config()
 
 
@@ -137,3 +139,57 @@ def log_response_hook(
             "elapsed_s": round(response.elapsed.total_seconds(), 3),
         },
     )
+
+
+@pytest.fixture(scope="session")
+def taiga_session(taiga_config: Config) -> requests.Session:
+    cfg = taiga_config
+    resp = requests.post(
+        f"{cfg.base_url}/auth",
+        json={"username": cfg.username, "password": cfg.password, "type": "normal"},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    session = requests.Session()
+    session.hooks["response"].append(log_response_hook)
+    session.headers["Authorization"] = f"Bearer {resp.json()['auth_token']}"
+    return session
+
+
+@pytest.fixture(scope="function")
+def created_user_story(
+    taiga_session: requests.Session, taiga_config: Config
+) -> Generator[dict[str, Any], None, None]:
+    """POST a new User Story and yield its response dict. No teardown.
+
+    Tests are responsible for calling delete_user_story(story["id"]) to clean up.
+    If a test fails before cleanup, the story leaks into the project — this is
+    intentional: it teaches why teardown fixtures matter (step-2 teaching moment).
+    """
+    cfg = taiga_config
+    resp = taiga_session.post(
+        f"{cfg.base_url}/userstories",
+        json={
+            "project": cfg.project_id,
+            "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]",
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    yield resp.json()
+
+
+@pytest.fixture(scope="function")
+def delete_user_story(
+    taiga_session: requests.Session, taiga_config: Config
+) -> Generator[Callable[[int], None], None, None]:
+    cfg = taiga_config
+
+    def delete(story_id: int) -> None:
+        resp = taiga_session.delete(
+            f"{cfg.base_url}/userstories/{story_id}",
+            timeout=10,
+        )
+        assert resp.status_code == 204, f"Expected 204 on delete, got {resp.status_code}: {resp.text}"
+
+    yield delete
