@@ -5,9 +5,7 @@ import os
 import re
 import time
 import uuid
-from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import Any
 
 import pytest
 import requests
@@ -22,7 +20,7 @@ _SENSITIVE_KEYS = frozenset({
     "password", "auth_token", "refresh_token", "client_secret",
 })
 _AUTH_RE = re.compile(r"(authorization\s*[:=]\s*)(\S+)", re.IGNORECASE)
-_BEARER_RE = re.compile(r"(Bearer\s+)([A-Za-z0-9._\-]+)", re.IGNORECASE)
+_BEARER_RE = re.compile(r"(Bearer\s+)([a-z0-9._\-]+)", re.IGNORECASE)
 
 
 def _redact_str(s: str) -> str:
@@ -31,7 +29,7 @@ def _redact_str(s: str) -> str:
     return s
 
 
-def _redact(value: object) -> object:
+def _redact(value: object):
     if isinstance(value, str):
         return _redact_str(value)
     if isinstance(value, bytes):
@@ -48,19 +46,19 @@ def _redact(value: object) -> object:
 
 
 class RedactAuthFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
+    def filter(self, record: logging.LogRecord):
         if isinstance(record.msg, str):
             record.msg = _redact_str(record.msg)
         if record.args:
             record.args = _redact(record.args)  # type: ignore[assignment]
-        for key, val in list(record.__dict__.items()):
+        for key, val in record.__dict__.items():
             if key.startswith("_") or key in {"msg", "args"}:
                 continue
             record.__dict__[key] = _redact(val)
         return True
 
 
-def _build_logging_config(log_file: Path) -> dict[str, Any]:
+def _build_logging_config(log_file: Path):
     return {
         "version": 1,
         "disable_existing_loggers": False,
@@ -108,7 +106,7 @@ def _build_logging_config(log_file: Path) -> dict[str, Any]:
     }
 
 
-def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
+def pytest_configure() -> None:  # noqa: ARG001
     try:
         load_config()
     except (RuntimeError, ValueError) as exc:
@@ -156,15 +154,14 @@ def taiga_session(taiga_config: Config) -> requests.Session:
     return session
 
 
+# This fixture is called explicitly
 @pytest.fixture(scope="function")
-def created_user_story(
-    taiga_session: requests.Session, taiga_config: Config
-) -> Generator[dict[str, Any], None, None]:
+def created_user_story(taiga_session: requests.Session, taiga_config: Config):
     """POST a new User Story and yield its response dict. No teardown.
 
     Tests are responsible for calling delete_user_story(story["id"]) to clean up.
     If a test fails before cleanup, the story leaks into the project — this is
-    intentional: it teaches why teardown fixtures matter (step-2 teaching moment).
+    intentional: it shows why teardown fixtures matter.
     """
     cfg = taiga_config
     resp = taiga_session.post(
@@ -179,10 +176,9 @@ def created_user_story(
     yield resp.json()
 
 
+# This fixture is called explicitly
 @pytest.fixture(scope="function")
-def delete_user_story(
-    taiga_session: requests.Session, taiga_config: Config
-) -> Generator[Callable[[int], None], None, None]:
+def delete_user_story(taiga_session: requests.Session, taiga_config: Config):
     cfg = taiga_config
 
     def delete(story_id: int) -> None:
@@ -193,3 +189,26 @@ def delete_user_story(
         assert resp.status_code == 204, f"Expected 204 on delete, got {resp.status_code}: {resp.text}"
 
     yield delete
+
+
+@pytest.fixture(scope="function")
+def user_story(taiga_session: requests.Session, taiga_config: Config):
+    """POST a new User Story, yield its response dict, then DELETE it on teardown.
+
+    Teardown runs even if the test fails — no leaked stories.
+    Use this instead of created_user_story + delete_user_story when the test
+    does not need to assert the DELETE itself.
+    """
+    cfg = taiga_config
+    resp = taiga_session.post(
+        f"{cfg.base_url}/userstories",
+        json={
+            "project": cfg.project_id,
+            "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]",
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    story = resp.json()
+    yield story
+    taiga_session.delete(f"{cfg.base_url}/userstories/{story['id']}", timeout=10)

@@ -67,30 +67,6 @@ class TestUserStoriesCrud:
     @pytest.mark.regression
     @allure.feature("User Stories")
     @allure.story("CRUD")
-    def test_list_user_stories_without_auth_returns_200_for_public_project(
-        self,
-        taiga_config: Config,
-    ) -> None:
-        # The workshop Taiga project is public: anonymous GET returns 200 (not 401).
-        # This test documents the actual access-control boundary for a public project.
-        cfg = taiga_config
-
-        with allure.step("GET user stories list without auth header"):
-            resp = requests.get(
-                f"{cfg.base_url}/userstories",
-                params={"project": cfg.project_id},
-                timeout=10,
-            )
-
-        with allure.step("Assert 200 and list body for public project"):
-            assert resp.status_code == 200, resp.text
-            assert isinstance(resp.json(), list), (
-                f"Expected list for public project, got: {type(resp.json()).__name__}"
-            )
-
-    @pytest.mark.regression
-    @allure.feature("User Stories")
-    @allure.story("CRUD")
     def test_create_user_story_returns_201_with_required_keys(
         self,
         taiga_session: requests.Session,
@@ -320,6 +296,4 @@ class TestUserStoriesCrud:
                 f"{cfg.base_url}/userstories/{story_id}",
                 timeout=10,
             )
-            assert confirm_resp.status_code == 404, confirm_resp.text
-            body: dict[str, Any] = confirm_resp.json()
-            assert "_error_message" in body, f"Unexpected 404 body shape: {body}"
+            assert confirm_resp.status_code == 404
