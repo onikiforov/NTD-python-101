@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "user_story.schema.json",
+  "title": "UserStory",
+  "type": "object",
+  "required": [
+    "id",
+    "ref",
+    "subject",
+    "project",
+    "status",
+    "version",
+    "created_date",
+    "modified_date"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "ref": {
+      "type": "integer"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "project": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "integer"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "modified_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": ["string", "null"]
+    },
+    "assigned_to": {
+      "type": ["integer", "null"]
+    },
+    "is_closed": {
+      "type": "boolean"
+    },
+    "is_blocked": {
+      "type": "boolean"
+    },
+    "total_comments": {
+      "type": "integer"
+    },
+    "total_watchers": {
+      "type": "integer"
+    },
+    "status_extra_info": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "is_closed": {
+          "type": "boolean"
+        }
+      },
+      "required": ["name", "color", "is_closed"]
+    },
+    "owner_extra_info": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "full_name_display": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "is_active": {
+          "type": "boolean"
+        }
+      },
+      "required": ["username", "full_name_display", "id", "is_active"]
+    }
+  }
+}

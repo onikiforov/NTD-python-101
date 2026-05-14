@@ -1,4 +1,5 @@
 import collections.abc
+import json
 import logging
 import logging.config
 import os
@@ -212,3 +213,10 @@ def user_story(taiga_session: requests.Session, taiga_config: Config):
     story = resp.json()
     yield story
     taiga_session.delete(f"{cfg.base_url}/userstories/{story['id']}", timeout=10)
+
+
+@pytest.fixture(scope="session")
+def user_story_schema() -> dict:
+    path = Path(__file__).parent / "schemas" / "user_story.schema.json"
+    with path.open() as fh:
+        return json.load(fh)
