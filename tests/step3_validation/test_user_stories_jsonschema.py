@@ -1,19 +1,15 @@
 """
-Step-3 validation tests: JSON Schema validation via jsonschema library.
+JSON Schema validation via jsonschema library.
 
 Demonstrates:
 - Positive: a valid API response passes schema validation without raising.
 - Negative (parametrized): a mutated response dict fails with ValidationError.
 """
-import json
 from typing import Any
 
 import allure
 import jsonschema
 import pytest
-import requests
-
-from config import Config
 
 # ---------------------------------------------------------------------------
 # Mutation helpers — each returns a copy of `data` with a specific defect.
@@ -49,32 +45,15 @@ class TestUserStoriesJsonSchema:
     @pytest.mark.schema_validation
     @allure.feature("User Stories")
     @allure.story("Validation-JsonSchema")
-    def test_get_user_story_validates_against_schema(
-        self,
-        taiga_session: requests.Session,
-        taiga_config: Config,
-        user_story: dict[str, Any],
-        user_story_schema: dict,
-    ) -> None:
-        with allure.step(f"GET /userstories/{user_story['id']}"):
-            resp = taiga_session.get(
-                f"{taiga_config.base_url}/userstories/{user_story['id']}",
-                timeout=10,
-            )
+    def test_get_user_story_validates_against_schema(self, taiga_session, taiga_config, user_story, user_story_schema):
+        resp = taiga_session.get(
+            f"{taiga_config.base_url}/userstories/{user_story['id']}",
+            timeout=10,
+        )
 
-        with allure.step("Assert HTTP 200"):
-            assert resp.status_code == 200, resp.text
+        assert resp.status_code == 200
 
-        with allure.step("Validate response against JSON Schema"):
-            data: dict[str, Any] = resp.json()
-            jsonschema.validate(instance=data, schema=user_story_schema)
-
-        with allure.step("Attach response JSON"):
-            allure.attach(
-                json.dumps(data, indent=2),
-                name="User Story Response",
-                attachment_type=allure.attachment_type.JSON,
-            )
+        jsonschema.validate(instance=resp.json(), schema=user_story_schema)
 
     @pytest.mark.regression
     @pytest.mark.schema_validation
@@ -85,25 +64,15 @@ class TestUserStoriesJsonSchema:
         _MUTATIONS,
         ids=[m[1] for m in _MUTATIONS],
     )
-    def test_get_user_story_mutated_response_fails_schema(
-        self,
-        taiga_session: requests.Session,
-        taiga_config: Config,
-        user_story: dict[str, Any],
-        user_story_schema: dict,
-        mutate_fn,
-        mutation_id: str,
-    ) -> None:
-        with allure.step(f"GET /userstories/{user_story['id']}"):
-            resp = taiga_session.get(
-                f"{taiga_config.base_url}/userstories/{user_story['id']}",
-                timeout=10,
-            )
-            assert resp.status_code == 200, resp.text
+    def test_get_user_story_mutated_response_fails_schema(self, taiga_session, taiga_config, user_story,
+                                                          user_story_schema, mutate_fn, mutation_id):
+        resp = taiga_session.get(
+            f"{taiga_config.base_url}/userstories/{user_story['id']}",
+            timeout=10,
+        )
+        assert resp.status_code == 200
 
-        with allure.step(f"Apply mutation: {mutation_id}"):
-            mutated: dict[str, Any] = mutate_fn(resp.json())
+        mutated: dict[str, Any] = mutate_fn(resp.json())
 
-        with allure.step("Assert jsonschema raises ValidationError"):
-            with pytest.raises(jsonschema.ValidationError):
-                jsonschema.validate(instance=mutated, schema=user_story_schema)
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(instance=mutated, schema=user_story_schema)

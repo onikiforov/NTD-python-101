@@ -142,10 +142,9 @@ def log_response_hook(
 
 @pytest.fixture(scope="session")
 def taiga_session(taiga_config: Config) -> requests.Session:
-    cfg = taiga_config
     resp = requests.post(
-        f"{cfg.base_url}/auth",
-        json={"username": cfg.username, "password": cfg.password, "type": "normal"},
+        f"{taiga_config.base_url}/auth",
+        json={"username": taiga_config.username, "password": taiga_config.password, "type": "normal"},
         timeout=10,
     )
     resp.raise_for_status()
@@ -164,11 +163,10 @@ def created_user_story(taiga_session: requests.Session, taiga_config: Config):
     If a test fails before cleanup, the story leaks into the project — this is
     intentional: it shows why teardown fixtures matter.
     """
-    cfg = taiga_config
     resp = taiga_session.post(
-        f"{cfg.base_url}/userstories",
+        f"{taiga_config.base_url}/userstories",
         json={
-            "project": cfg.project_id,
+            "project": taiga_config.project_id,
             "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]",
         },
         timeout=10,
@@ -180,11 +178,9 @@ def created_user_story(taiga_session: requests.Session, taiga_config: Config):
 # This fixture is called explicitly
 @pytest.fixture(scope="function")
 def delete_user_story(taiga_session: requests.Session, taiga_config: Config):
-    cfg = taiga_config
-
     def delete(story_id: int) -> None:
         resp = taiga_session.delete(
-            f"{cfg.base_url}/userstories/{story_id}",
+            f"{taiga_config.base_url}/userstories/{story_id}",
             timeout=10,
         )
         assert resp.status_code == 204, f"Expected 204 on delete, got {resp.status_code}: {resp.text}"
@@ -200,11 +196,10 @@ def user_story(taiga_session: requests.Session, taiga_config: Config):
     Use this instead of created_user_story + delete_user_story when the test
     does not need to assert the DELETE itself.
     """
-    cfg = taiga_config
     resp = taiga_session.post(
         f"{cfg.base_url}/userstories",
         json={
-            "project": cfg.project_id,
+            "project": taiga_config.project_id,
             "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]",
         },
         timeout=10,
@@ -212,7 +207,7 @@ def user_story(taiga_session: requests.Session, taiga_config: Config):
     resp.raise_for_status()
     story = resp.json()
     yield story
-    taiga_session.delete(f"{cfg.base_url}/userstories/{story['id']}", timeout=10)
+    taiga_session.delete(f"{taiga_config.base_url}/userstories/{story['id']}", timeout=10)
 
 
 @pytest.fixture(scope="session")

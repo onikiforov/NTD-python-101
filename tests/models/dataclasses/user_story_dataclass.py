@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from tests.models.epic_ref_dataclass import EpicRef
-from tests.models.neighbors_dataclass import Neighbors
-from tests.models.project_extra_info_dataclass import ProjectExtraInfo
-from tests.models.status_extra_info_dataclass import StatusExtraInfo
-from tests.models.user_extra_info_dataclass import UserExtraInfo
+from tests.models.dataclasses.epic_ref_dataclass import EpicRef
+from tests.models.dataclasses.neighbors_dataclass import Neighbors
+from tests.models.dataclasses.project_extra_info_dataclass import ProjectExtraInfo
+from tests.models.dataclasses.status_extra_info_dataclass import StatusExtraInfo
+from tests.models.dataclasses.user_extra_info_dataclass import UserExtraInfo
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +55,6 @@ class UserStory:
     external_reference: str | None = None
     finish_date: str | None = None
     from_task_ref: int | None = None
-    swimlane: int | None = None
     generated_from_issue: int | None = None
     generated_from_task: int | None = None
     milestone: int | None = None
@@ -64,6 +63,7 @@ class UserStory:
     neighbors: Neighbors | None = None
     origin_issue: int | None = None
     origin_task: int | None = None
+    swimlane: int | None = None
     total_points: float | None = None
     tribe_gig: str | None = None
 
@@ -71,13 +71,7 @@ class UserStory:
     def from_dict(cls, data: dict) -> "UserStory":
         required = (
             "id", "ref", "subject", "project", "status", "version",
-            "created_date", "modified_date", "owner", "backlog_order",
-            "sprint_order", "kanban_order", "is_blocked", "is_closed",
-            "is_voter", "is_watcher", "client_requirement", "team_requirement",
-            "total_comments", "total_watchers", "total_voters", "total_attachments",
-            "blocked_note", "blocked_note_html", "comment", "due_date_reason",
-            "due_date_status", "tags", "watchers", "tasks", "assigned_users",
-            "points", "owner_extra_info", "project_extra_info", "status_extra_info",
+            "created_date", "modified_date", "owner", "is_closed"
         )
         for f in required:
             if f not in data:
@@ -104,7 +98,6 @@ class UserStory:
             external_reference=data.get("external_reference"),
             finish_date=data.get("finish_date"),
             from_task_ref=data.get("from_task_ref"),
-            swimlane=data.get("swimlane"),
             generated_from_issue=data.get("generated_from_issue"),
             generated_from_task=data.get("generated_from_task"),
             id=data["id"],
@@ -130,6 +123,7 @@ class UserStory:
             status=data["status"],
             status_extra_info=StatusExtraInfo.from_dict(data["status_extra_info"]),
             subject=data["subject"],
+            swimlane=data.get("swimlane"),
             tags=tuple(tuple(t) for t in data["tags"]),
             tasks=tuple(data["tasks"]),
             team_requirement=data["team_requirement"],
