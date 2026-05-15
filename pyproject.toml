@@ -11,12 +11,3 @@ dependencies = [
     "jsonschema>=4.23",
     "pydantic>=2.7",
 ]
-
-[tool.pytest.ini_options]
-addopts = "--alluredir=allure-results --clean-alluredir"
-testpaths = ["tests"]
-markers = [
-    "smoke: fast sanity checks",
-    "regression: full CRUD coverage",
-    "schema_validation: response structure validation",
-]

@@ -1,11 +1,7 @@
 import collections.abc
 import logging
-import logging.config
-import os
 import re
-import time
 from pathlib import Path
-from typing import Any
 
 import pytest
 import requests
@@ -58,66 +54,20 @@ class RedactAuthFilter(logging.Filter):
         return True
 
 
-def _build_logging_config(log_file: Path) -> dict[str, Any]:
-    return {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "filters": {
-            "redact_auth": {"()": RedactAuthFilter},
-        },
-        "formatters": {
-            "console": {
-                "format": "%(levelname)s %(name)s %(message)s",
-            },
-            "file": {
-                "format": "%(asctime)s %(levelname)s %(name)s %(method)s %(url)s %(status_code)s %(elapsed_s)s %(message)s",
-                "defaults": {
-                    "method": "-",
-                    "url": "-",
-                    "status_code": "-",
-                    "elapsed_s": "-",
-                },
-            },
-        },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "level": "INFO",
-                "formatter": "console",
-                "filters": ["redact_auth"],
-            },
-            "file": {
-                "class": "logging.FileHandler",
-                "level": "DEBUG",
-                "formatter": "file",
-                "filters": ["redact_auth"],
-                "filename": str(log_file),
-                "encoding": "utf-8",
-            },
-        },
-        "loggers": {
-            "urllib3": {"level": "WARNING", "propagate": True},
-            "requests": {"level": "WARNING", "propagate": True},
-        },
-        "root": {
-            "level": "DEBUG",
-            "handlers": ["console", "file"],
-        },
-    }
-
-
 def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     try:
         load_config()
     except (RuntimeError, ValueError) as exc:
         pytest.exit(str(exc), returncode=1)
 
-    logs_dir = Path(__file__).parent / "logs"
-    logs_dir.mkdir(exist_ok=True)
-    log_file = logs_dir / f"test-run-{int(time.time())}-{os.getpid()}.log"
+    Path("logs").mkdir(exist_ok=True)
 
-    logging.config.dictConfig(_build_logging_config(log_file))
-    os.chmod(log_file, 0o600)
+    redact = RedactAuthFilter()
+    for handler in logging.root.handlers:
+        handler.addFilter(redact)
+
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
 
 
 def log_response_hook(
