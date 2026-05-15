@@ -72,22 +72,8 @@ def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
 
 
 @pytest.fixture(autouse=True)
-def attach_logs_to_allure(caplog: pytest.LogCaptureFixture) -> collections.abc.Generator[None, None, None]:
+def attach_logs_to_allure(caplog: pytest.LogCaptureFixture):
     with caplog.at_level(logging.DEBUG):
         yield
     if caplog.text:
         allure.attach(caplog.text, name="test-log", attachment_type=allure.attachment_type.TEXT)
-
-
-def log_response_hook(
-    response: requests.Response, *_args: object, **_kwargs: object
-) -> None:
-    logger.debug(
-        "http_response",
-        extra={
-            "method": response.request.method,
-            "url": response.request.url,
-            "status_code": response.status_code,
-            "elapsed_s": round(response.elapsed.total_seconds(), 3),
-        },
-    )
