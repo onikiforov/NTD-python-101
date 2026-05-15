@@ -20,7 +20,7 @@ _SENSITIVE_KEYS = frozenset({
     "password", "auth_token", "refresh_token", "client_secret",
 })
 _AUTH_RE = re.compile(r"(authorization\s*[:=]\s*)(\S+)", re.IGNORECASE)
-_BEARER_RE = re.compile(r"(Bearer\s+)([A-Za-z0-9._\-]+)", re.IGNORECASE)
+_BEARER_RE = re.compile(r"(Bearer\s+)([a-z0-9._\-]+)", re.IGNORECASE)
 
 
 def _redact_str(s: str) -> str:
