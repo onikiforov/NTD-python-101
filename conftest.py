@@ -3,6 +3,7 @@ import logging
 import re
 from pathlib import Path
 
+import allure
 import pytest
 import requests
 
@@ -68,6 +69,14 @@ def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
+
+
+@pytest.fixture(autouse=True)
+def attach_logs_to_allure(caplog: pytest.LogCaptureFixture) -> collections.abc.Generator[None, None, None]:
+    with caplog.at_level(logging.DEBUG):
+        yield
+    if caplog.text:
+        allure.attach(caplog.text, name="test-log", attachment_type=allure.attachment_type.TEXT)
 
 
 def log_response_hook(
