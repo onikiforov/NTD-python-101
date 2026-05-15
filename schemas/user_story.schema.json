@@ -24,19 +24,57 @@
     "created_date": {"type": "string", "format": "date-time"},
     "modified_date": {"type": "string", "format": "date-time"},
     "assigned_to": {"type": ["integer", "null"]},
-    "assigned_to_extra_info": {"type": ["object", "null"]},
+    "assigned_to_extra_info": {
+      "type": ["object", "null"],
+      "required": ["id", "username", "full_name_display", "is_active"],
+      "properties": {
+        "id": {"type": "integer"},
+        "username": {"type": "string"},
+        "full_name_display": {"type": "string"},
+        "gravatar_id": {"type": "string"},
+        "photo": {"type": ["string", "null"]},
+        "big_photo": {"type": ["string", "null"]},
+        "is_active": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
     "assigned_users": {"type": "array"},
     "attachments": {"type": "array"},
     "backlog_order": {"type": "integer"},
     "blocked_note": {"type": "string"},
+    "blocked_note_html": {"type": "string"},
     "client_requirement": {"type": "boolean"},
     "comment": {"type": "string"},
     "description": {"type": ["string", "null"]},
+    "description_html": {"type": ["string", "null"]},
     "due_date": {"type": ["string", "null"], "format": "date-time"},
     "due_date_reason": {"type": "string"},
     "due_date_status": {"type": "string"},
     "epic_order": {"type": ["integer", "null"]},
-    "epics": {"type": ["array", "null"]},
+    "epics": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["id", "ref", "subject", "color", "project"],
+        "properties": {
+          "id": {"type": "integer"},
+          "ref": {"type": "integer"},
+          "subject": {"type": "string"},
+          "color": {"type": "string"},
+          "project": {
+            "type": "object",
+            "required": ["id", "name", "slug"],
+            "properties": {
+              "id": {"type": "integer"},
+              "name": {"type": "string"},
+              "slug": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
     "external_reference": {"type": ["string", "null"]},
     "finish_date": {"type": ["string", "null"]},
     "generated_from_issue": {"type": ["integer", "null"]},
@@ -112,6 +150,32 @@
     "total_voters": {"type": "integer", "minimum": 0},
     "total_watchers": {"type": "integer", "minimum": 0},
     "tribe_gig": {"type": ["string", "null"]},
+    "neighbors": {
+      "type": "object",
+      "properties": {
+        "next": {
+          "type": ["object", "null"],
+          "required": ["id", "ref", "subject"],
+          "properties": {
+            "id": {"type": "integer"},
+            "ref": {"type": "integer"},
+            "subject": {"type": "string"}
+          },
+          "additionalProperties": true
+        },
+        "previous": {
+          "type": ["object", "null"],
+          "required": ["id", "ref", "subject"],
+          "properties": {
+            "id": {"type": "integer"},
+            "ref": {"type": "integer"},
+            "subject": {"type": "string"}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
     "watchers": {"type": "array"}
   }
 }
