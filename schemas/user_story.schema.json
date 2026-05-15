@@ -15,88 +15,103 @@
   ],
   "additionalProperties": true,
   "properties": {
-    "id": {
-      "type": "integer"
+    "id": {"type": "integer"},
+    "ref": {"type": "integer"},
+    "subject": {"type": "string"},
+    "project": {"type": "integer"},
+    "status": {"type": "integer"},
+    "version": {"type": "integer"},
+    "created_date": {"type": "string", "format": "date-time"},
+    "modified_date": {"type": "string", "format": "date-time"},
+    "assigned_to": {"type": ["integer", "null"]},
+    "assigned_to_extra_info": {"type": ["object", "null"]},
+    "assigned_users": {"type": "array"},
+    "attachments": {"type": "array"},
+    "backlog_order": {"type": "integer"},
+    "blocked_note": {"type": "string"},
+    "client_requirement": {"type": "boolean"},
+    "comment": {"type": "string"},
+    "description": {"type": ["string", "null"]},
+    "due_date": {"type": ["string", "null"], "format": "date-time"},
+    "due_date_reason": {"type": "string"},
+    "due_date_status": {"type": "string"},
+    "epic_order": {"type": ["integer", "null"]},
+    "epics": {"type": ["array", "null"]},
+    "external_reference": {"type": ["string", "null"]},
+    "finish_date": {"type": ["string", "null"]},
+    "generated_from_issue": {"type": ["integer", "null"]},
+    "generated_from_task": {"type": ["integer", "null"]},
+    "is_blocked": {"type": "boolean"},
+    "is_closed": {"type": "boolean"},
+    "is_voter": {"type": "boolean"},
+    "is_watcher": {"type": "boolean"},
+    "kanban_order": {"type": "integer"},
+    "milestone": {"type": ["integer", "null"]},
+    "milestone_name": {"type": ["string", "null"]},
+    "milestone_slug": {"type": ["string", "null"]},
+    "origin_issue": {"type": ["integer", "null"]},
+    "origin_task": {"type": ["integer", "null"]},
+    "owner": {"type": "integer"},
+    "owner_extra_info": {
+      "type": "object",
+      "required": ["id", "username", "full_name_display", "is_active"],
+      "properties": {
+        "id": {"type": "integer"},
+        "username": {"type": "string"},
+        "full_name_display": {"type": "string"},
+        "gravatar_id": {"type": "string"},
+        "photo": {"type": ["string", "null"]},
+        "big_photo": {"type": ["string", "null"]},
+        "is_active": {"type": "boolean"}
+      },
+      "additionalProperties": true
     },
-    "ref": {
-      "type": "integer"
+    "points": {
+      "type": "object",
+      "additionalProperties": {"type": ["integer", "null"]}
     },
-    "subject": {
-      "type": "string"
+    "project_extra_info": {
+      "type": "object",
+      "required": ["id", "name", "slug"],
+      "properties": {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
+        "slug": {"type": "string"},
+        "logo_small_url": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
     },
-    "project": {
-      "type": "integer"
-    },
-    "status": {
-      "type": "integer"
-    },
-    "version": {
-      "type": "integer"
-    },
-    "created_date": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "modified_date": {
-      "type": "string",
-      "format": "date-time"
+    "sprint_order": {"type": "integer"},
+    "status_extra_info": {
+      "type": "object",
+      "required": ["name", "color", "is_closed"],
+      "properties": {
+        "name": {"type": "string"},
+        "color": {"type": "string"},
+        "is_closed": {"type": "boolean"}
+      },
+      "additionalProperties": true
     },
     "tags": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "array",
+        "prefixItems": [
+          {"type": "string"},
+          {"type": ["string", "null"]}
+        ],
+        "minItems": 2,
+        "maxItems": 2
       }
     },
-    "description": {
-      "type": ["string", "null"]
-    },
-    "assigned_to": {
-      "type": ["integer", "null"]
-    },
-    "is_closed": {
-      "type": "boolean"
-    },
-    "is_blocked": {
-      "type": "boolean"
-    },
-    "total_comments": {
-      "type": "integer"
-    },
-    "total_watchers": {
-      "type": "integer"
-    },
-    "status_extra_info": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "color": {
-          "type": "string"
-        },
-        "is_closed": {
-          "type": "boolean"
-        }
-      },
-      "required": ["name", "color", "is_closed"]
-    },
-    "owner_extra_info": {
-      "type": "object",
-      "properties": {
-        "username": {
-          "type": "string"
-        },
-        "full_name_display": {
-          "type": "string"
-        },
-        "id": {
-          "type": "integer"
-        },
-        "is_active": {
-          "type": "boolean"
-        }
-      },
-      "required": ["username", "full_name_display", "id", "is_active"]
-    }
+    "tasks": {"type": "array"},
+    "team_requirement": {"type": "boolean"},
+    "total_attachments": {"type": "integer", "minimum": 0},
+    "total_comments": {"type": "integer", "minimum": 0},
+    "total_points": {"type": ["number", "null"]},
+    "total_voters": {"type": "integer", "minimum": 0},
+    "total_watchers": {"type": "integer", "minimum": 0},
+    "tribe_gig": {"type": ["string", "null"]},
+    "watchers": {"type": "array"}
   }
 }

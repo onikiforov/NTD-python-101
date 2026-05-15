@@ -14,7 +14,7 @@ import pytest
 import requests
 
 from config import Config
-from tests.models.pydantic_models import UserStory
+from tests.models.user_story_pydantic_model import UserStory
 
 # Each entry: (mutation dict, descriptive id)
 _TYPE_MUTATIONS = [
