@@ -34,6 +34,7 @@ _REQUIRED_FIELDS = (
     "total_voters",
     "total_attachments",
     "blocked_note",
+    "blocked_note_html",
     "comment",
     "due_date_reason",
     "due_date_status",

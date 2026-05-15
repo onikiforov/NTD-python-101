@@ -113,3 +113,5 @@ class UserStory(BaseModel):
     origin_task: int | None = None
     total_points: float | None = None
     tribe_gig: str | None = None
+    from_task_ref: int | None = None
+    swimlane: int | None = None

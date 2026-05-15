@@ -176,6 +176,8 @@
       },
       "additionalProperties": false
     },
-    "watchers": {"type": "array"}
+    "watchers": {"type": "array"},
+    "from_task_ref": {"type": ["integer", "null"]},
+    "swimlane": {"type": ["integer", "null"]}
   }
 }
