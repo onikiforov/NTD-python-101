@@ -25,7 +25,6 @@
 - **Allure CLI** installed (see [Allure docs](https://allurereport.org/docs/install/)).
 
 ---
-
 ## 3. Setup
 
 ```bash
@@ -67,7 +66,6 @@ uv run allure serve allure-results
 > **Note:** On `main` (step-0), pytest collects **0 tests** by design. The infrastructure is in place; tests are added in subsequent branches.
 
 ---
-
 ## 5. Branch Tour
 
 | Branch                 | What's new                                                    | Look at first                                          |
