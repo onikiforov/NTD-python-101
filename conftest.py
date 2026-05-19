@@ -1,5 +1,7 @@
+import json
 import logging
 import uuid
+from pathlib import Path
 
 import pytest
 import requests
@@ -115,5 +117,11 @@ def user_story(taiga_session: requests.Session, cfg: Config):
 
     story = resp.json()
     yield story
-
     API(cfg, taiga_session).delete_us_by_id(story['id'])
+
+
+@pytest.fixture(scope="session")
+def user_story_schema() -> dict:
+    path = Path(__file__).parent / "schemas" / "user_story.schema.json"
+    with path.open() as fh:
+        return json.load(fh)
