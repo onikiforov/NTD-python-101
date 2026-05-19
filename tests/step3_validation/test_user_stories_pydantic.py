@@ -11,6 +11,7 @@ import allure
 import pydantic
 import pytest
 
+from helpers.api import API
 from tests.models.pydantic.user_story_pydantic_model import UserStory
 
 # Each entry: (mutation dict, descriptive id)
@@ -26,11 +27,8 @@ class TestUserStoriesPydantic:
     @pytest.mark.schema_validation
     @allure.feature("User Stories")
     @allure.story("Validation-Pydantic")
-    def test_get_user_story_validates_with_pydantic(self, taiga_session, taiga_config, user_story):
-        resp = taiga_session.get(
-            f"{taiga_config.base_url}/userstories/{user_story['id']}",
-            timeout=10,
-        )
+    def test_get_user_story_validates_with_pydantic(self, taiga_session, cfg, user_story):
+        resp = API(cfg, taiga_session).get_us_by_id(user_story['id'])
 
         assert resp.status_code == 200
 
@@ -48,12 +46,9 @@ class TestUserStoriesPydantic:
         _TYPE_MUTATIONS,
         ids=[m[1] for m in _TYPE_MUTATIONS],
     )
-    def test_get_user_story_invalid_type_raises_pydantic_error(self, taiga_session, taiga_config, user_story,
+    def test_get_user_story_invalid_type_raises_pydantic_error(self, taiga_session, cfg, user_story,
                                                                mutation, mutation_id):
-        resp = taiga_session.get(
-            f"{taiga_config.base_url}/userstories/{user_story['id']}",
-            timeout=10,
-        )
+        resp = API(cfg, taiga_session).get_us_by_id(user_story['id'])
         assert resp.status_code == 200
 
         mutated: dict[str, Any] = {**resp.json(), **mutation}

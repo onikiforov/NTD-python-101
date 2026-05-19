@@ -11,6 +11,9 @@ import allure
 import jsonschema
 import pytest
 
+from helpers.api import API
+
+
 # ---------------------------------------------------------------------------
 # Mutation helpers — each returns a copy of `data` with a specific defect.
 # ---------------------------------------------------------------------------
@@ -45,11 +48,8 @@ class TestUserStoriesJsonSchema:
     @pytest.mark.schema_validation
     @allure.feature("User Stories")
     @allure.story("Validation-JsonSchema")
-    def test_get_user_story_validates_against_schema(self, taiga_session, taiga_config, user_story, user_story_schema):
-        resp = taiga_session.get(
-            f"{taiga_config.base_url}/userstories/{user_story['id']}",
-            timeout=10,
-        )
+    def test_get_user_story_validates_against_schema(self, taiga_session, cfg, user_story, user_story_schema):
+        resp = API(cfg, taiga_session).get_us_by_id(user_story['id'])
 
         assert resp.status_code == 200
 
@@ -64,12 +64,9 @@ class TestUserStoriesJsonSchema:
         _MUTATIONS,
         ids=[m[1] for m in _MUTATIONS],
     )
-    def test_get_user_story_mutated_response_fails_schema(self, taiga_session, taiga_config, user_story,
+    def test_get_user_story_mutated_response_fails_schema(self, taiga_session, cfg, user_story,
                                                           user_story_schema, mutate_fn, mutation_id):
-        resp = taiga_session.get(
-            f"{taiga_config.base_url}/userstories/{user_story['id']}",
-            timeout=10,
-        )
+        resp = API(cfg, taiga_session).get_us_by_id(user_story['id'])
         assert resp.status_code == 200
 
         mutated: dict[str, Any] = mutate_fn(resp.json())

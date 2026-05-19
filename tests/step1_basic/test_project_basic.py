@@ -1,11 +1,8 @@
 import requests
 
-from config import load_config, Config
+from tests.step1_basic.base_test import BaseTest
 
-
-class TestProjectBasic:
-    cfg: Config = load_config()
-
+class TestProjectBasic(BaseTest):
     def _login(self) -> str:
         resp = requests.post(
             f"{self.cfg.base_url}/auth",

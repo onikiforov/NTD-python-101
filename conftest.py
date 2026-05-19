@@ -1,30 +1,23 @@
-import collections.abc
 import json
 import logging
-import re
-import time
 import uuid
 from pathlib import Path
 
-import allure
 import pytest
 import requests
 
 from config import Config, load_config
+from helpers.api import API
 
 logger = logging.getLogger(__name__)
 
 
-def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
+@pytest.fixture(scope="session", autouse=True)
+def cfg() -> Config:  # noqa: ARG001
     try:
-        load_config()
+        return load_config()
     except (RuntimeError, ValueError) as exc:
         pytest.exit(str(exc), returncode=1)
-
-
-@pytest.fixture(scope="session")
-def taiga_config() -> Config:
-    return load_config()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -72,13 +65,12 @@ def log_response_hook(
 
 
 @pytest.fixture(scope="session")
-def taiga_session(taiga_config: Config) -> requests.Session:
-    resp = requests.post(
-        f"{taiga_config.base_url}/auth",
-        json={"username": taiga_config.username, "password": taiga_config.password, "type": "normal"},
-        timeout=10,
-    )
+def taiga_session(cfg: Config) -> requests.Session:
+    body = {"username": cfg.username, "password": cfg.password, "type": "normal"}
+
+    resp = API(cfg, None).post_auth(body)
     resp.raise_for_status()
+
     session = requests.Session()
     session.hooks["response"].append(log_response_hook)
     session.headers["Authorization"] = f"Bearer {resp.json()['auth_token']}"
@@ -87,58 +79,45 @@ def taiga_session(taiga_config: Config) -> requests.Session:
 
 # This fixture is called explicitly
 @pytest.fixture(scope="function")
-def created_user_story(taiga_session: requests.Session, taiga_config: Config):
+def created_user_story(taiga_session: requests.Session, cfg: Config):
     """POST a new User Story and yield its response dict. No teardown.
 
     Tests are responsible for calling delete_user_story(story["id"]) to clean up.
     If a test fails before cleanup, the story leaks into the project — this is
     intentional: it shows why teardown fixtures matter.
     """
-    resp = taiga_session.post(
-        f"{taiga_config.base_url}/userstories",
-        json={
-            "project": taiga_config.project_id,
-            "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]",
-        },
-        timeout=10,
-    )
+    body = {"project": cfg.project_id, "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]"}
+    resp = API(cfg, taiga_session).post_user_story(body)
+
     resp.raise_for_status()
     yield resp.json()
 
 
 # This fixture is called explicitly
 @pytest.fixture(scope="function")
-def delete_user_story(taiga_session: requests.Session, taiga_config: Config):
+def delete_user_story(taiga_session: requests.Session, cfg: Config):
     def delete(story_id: int) -> None:
-        resp = taiga_session.delete(
-            f"{taiga_config.base_url}/userstories/{story_id}",
-            timeout=10,
-        )
-        assert resp.status_code == 204, f"Expected 204 on delete, got {resp.status_code}: {resp.text}"
+        resp = API(cfg, taiga_session).delete_us_by_id(story_id)
+        assert resp.status_code == 204
 
     yield delete
 
 
 @pytest.fixture(scope="function")
-def user_story(taiga_session: requests.Session, taiga_config: Config):
+def user_story(taiga_session: requests.Session, cfg: Config):
     """POST a new User Story, yield its response dict, then DELETE it on teardown.
 
     Teardown runs even if the test fails — no leaked stories.
     Use this instead of created_user_story + delete_user_story when the test
     does not need to assert the DELETE itself.
     """
-    resp = taiga_session.post(
-        f"{taiga_config.base_url}/userstories",
-        json={
-            "project": taiga_config.project_id,
-            "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]",
-        },
-        timeout=10,
-    )
+    body = {"project": cfg.project_id, "subject": f"Workshop US [{uuid.uuid4().hex[:8]}]"}
+    resp = API(cfg, taiga_session).post_user_story(body)
     resp.raise_for_status()
+
     story = resp.json()
     yield story
-    taiga_session.delete(f"{taiga_config.base_url}/userstories/{story['id']}", timeout=10)
+    API(cfg, taiga_session).delete_us_by_id(story['id'])
 
 
 @pytest.fixture(scope="session")

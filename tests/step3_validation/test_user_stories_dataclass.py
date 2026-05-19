@@ -8,6 +8,7 @@ Demonstrates:
 import allure
 import pytest
 
+from helpers.api import API
 from tests.models.dataclasses.user_story_dataclass import UserStory
 
 _REQUIRED_FIELDS = (
@@ -21,11 +22,8 @@ class TestUserStoriesDataclass:
     @pytest.mark.schema_validation
     @allure.feature("User Stories")
     @allure.story("Validation-Dataclass")
-    def test_get_user_story_parses_to_dataclass(self, taiga_session, taiga_config, user_story):
-        resp = taiga_session.get(
-            f"{taiga_config.base_url}/userstories/{user_story['id']}",
-            timeout=10,
-        )
+    def test_get_user_story_parses_to_dataclass(self, taiga_session, cfg, user_story):
+        resp = API(cfg, taiga_session).get_us_by_id(user_story['id'])
 
         assert resp.status_code == 200
 
@@ -44,11 +42,8 @@ class TestUserStoriesDataclass:
         _REQUIRED_FIELDS,
         ids=list(_REQUIRED_FIELDS),
     )
-    def test_get_user_story_missing_field_raises_value_error(self, taiga_session, taiga_config, user_story, field_name):
-        resp = taiga_session.get(
-            f"{taiga_config.base_url}/userstories/{user_story['id']}",
-            timeout=10,
-        )
+    def test_get_user_story_missing_field_raises_value_error(self, taiga_session, cfg, user_story, field_name):
+        resp = API(cfg, taiga_session).get_us_by_id(user_story['id'])
         assert resp.status_code == 200
 
         data = dict(resp.json())

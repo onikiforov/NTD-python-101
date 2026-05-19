@@ -14,44 +14,23 @@ import uuid
 
 import allure
 import pytest
-import requests
 from requests import Session, Response
 
 from config import Config
-from conftest import log_response_hook
+from tests.step1_basic.base_test import BaseTest
 
 _USER_STORY_REQUIRED_KEYS = {"id", "subject", "project"}
 
 
-class TestUserStoriesBasic:
+class TestUserStoriesBasic(BaseTest):
     @staticmethod
-    def _login(cfg: Config) -> requests.Session:
-        """Perform inline login and return a session with auth headers attached."""
-        resp = requests.post(
-            f"{cfg.base_url}/auth",
-            json={
-                "username": cfg.username,
-                "password": cfg.password,
-                "type": "normal",
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
-        token = resp.json()["auth_token"]
-
-        session = requests.Session()
-        session.hooks["response"].append(log_response_hook)
-        session.headers.update({"Authorization": f"Bearer {token}"})
-        return session
-
-    @staticmethod
-    def create_us(taiga_config: Config, session: Session) -> tuple[Response, str]:
+    def create_us(cfg: Config, session: Session) -> tuple[Response, str]:
         """Creates User Story as a pre-condition and returns it's title"""
         us_subject = f"Workshop step-1 user story {uuid.uuid4().hex[:8]}"
 
         resp = session.post(
-            f"{taiga_config.base_url}/userstories",
-            json={"project": taiga_config.project_id, "subject": us_subject},
+            f"{cfg.base_url}/userstories",
+            json={"project": cfg.project_id, "subject": us_subject},
             timeout=10,
         )
         resp.raise_for_status()
@@ -61,18 +40,18 @@ class TestUserStoriesBasic:
     @pytest.mark.smoke
     @allure.feature("User Stories")
     @allure.story("Basic")
-    def test_list_user_stories_returns_200(self, taiga_config: Config) -> None:
+    def test_list_user_stories_returns_200(self, cfg: Config) -> None:
         with allure.step("Login"):
-            session = self._login(taiga_config)
+            session = self._login_returns_session()
 
         with allure.step("Create new User Story"):
             # Creates new User Story so the list is never empty
-            _, us_subject = self.create_us(taiga_config, session)
+            _, us_subject = self.create_us(cfg, session)
 
         with allure.step("Fetch user stories list"):
             resp = session.get(
-                f"{taiga_config.base_url}/userstories",
-                params={"project": taiga_config.project_id},
+                f"{cfg.base_url}/userstories",
+                params={"project": cfg.project_id},
                 timeout=10,
             )
             resp.raise_for_status()
@@ -89,12 +68,12 @@ class TestUserStoriesBasic:
     @pytest.mark.smoke
     @allure.feature("User Stories")
     @allure.story("Basic")
-    def test_create_user_story_returns_201(self, taiga_config: Config) -> None:
+    def test_create_user_story_returns_201(self, cfg: Config) -> None:
         with allure.step("Login"):
-            session = self._login(taiga_config)
+            session = self._login_returns_session()
 
         with allure.step("Create user story"):
-            resp, us_subject = self.create_us(taiga_config, session)
+            resp, us_subject = self.create_us(cfg, session)
 
         with allure.step("Assert response fields"):
             assert resp.status_code == 201, resp.text
