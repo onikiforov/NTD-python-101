@@ -1,32 +1,10 @@
-import requests
-
-from config import load_config, Config
+from tests.step1_basic.base_test import BaseTest
 
 
-class TestProjectBasicLoginSession:
-    cfg: Config = load_config()
-
-    def _login(self) -> requests.Session:
-        """Perform inline login and return a session with auth headers attached."""
-        resp = requests.post(
-            f"{self.cfg.base_url}/auth",
-            json={
-                "username": self.cfg.username,
-                "password": self.cfg.password,
-                "type": "normal",
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
-        token = resp.json()["auth_token"]
-
-        session = requests.Session()
-        session.headers.update({"Authorization": f"Bearer {token}"})
-        return session
-
+class TestProjectBasicLoginSession(BaseTest):
     def test_get_project_details_return_200(self) -> None:
         # Perform login to create a session
-        session = self._login()
+        session = self._login_returns_session()
 
         # Send request and get response
         resp = session.get(
