@@ -49,9 +49,8 @@ class TestUserStoriesCrud:
     @pytest.mark.regression
     @allure.feature("User Stories")
     @allure.story("CRUD")
-    def test_create_user_story_returns_200_with_required_keys(self, taiga_session, cfg, delete_user_story):
+    def test_create_user_story_returns_201_with_required_keys(self, taiga_session, cfg, delete_user_story):
         subject = f"Workshop US {uuid.uuid4().hex[:8]}"
-
         body = {"project": cfg.project_id, "subject": subject}
 
         us_resp = API(cfg, taiga_session).post_user_story(body)
@@ -124,8 +123,8 @@ class TestUserStoriesCrud:
 
         assert new_us_response.status_code == 400
 
-        body = new_us_response.json()
-        assert "subject" in body
+        response_body = new_us_response.json()
+        assert "subject" in response_body
 
     @pytest.mark.regression
     @allure.feature("User Stories")

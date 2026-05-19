@@ -16,6 +16,7 @@ import requests
 import yaml
 
 from config import Config
+from helpers.api import API
 
 _US_OUT_KEYS = frozenset({
     "id", "ref", "subject", "project",
@@ -36,26 +37,24 @@ class TestUserStoriesCrud:
     def test_list_user_stories_returns_200_and_list(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
         created_user_story: dict[str, Any],
         delete_user_story: Callable[[int], None],
     ) -> None:
         story = created_user_story
-        cfg = taiga_config
 
         with allure.step("Fetch user stories list"):
-            resp = taiga_session.get(
-                f"{cfg.base_url}/userstories",
-                params={"project": cfg.project_id},
-                timeout=10,
-            )
+            resp = API(cfg, taiga_session).get_user_stories_list()
 
         with allure.step("Assert 200 and list structure"):
-            assert resp.status_code == 200, resp.text
+            assert resp.status_code == 200
+
             data = resp.json()
             assert isinstance(data, list), f"Expected list, got {type(data).__name__}"
+
             ids = [item["id"] for item in data]
             assert story["id"] in ids, f"Created story {story['id']} not found in list"
+
             for item in data:
                 assert {"id", "subject", "project"}.issubset(set(item.keys())), (
                     f"Item missing required keys: {item}"
@@ -70,22 +69,19 @@ class TestUserStoriesCrud:
     def test_create_user_story_returns_201_with_required_keys(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
         delete_user_story: Callable[[int], None],
     ) -> None:
-        cfg = taiga_config
         subject = f"Workshop US {uuid.uuid4().hex[:8]}"
+        body = {"project": cfg.project_id, "subject": subject}
 
         with allure.step("POST new user story with minimal payload"):
-            resp = taiga_session.post(
-                f"{cfg.base_url}/userstories",
-                json={"project": cfg.project_id, "subject": subject},
-                timeout=10,
-            )
+            us_resp = API(cfg, taiga_session).post_user_story(body)
 
         with allure.step("Assert 201 and response contract"):
-            assert resp.status_code == 201, resp.text
-            data: dict[str, Any] = resp.json()
+            assert us_resp.status_code == 201
+
+            data: dict[str, Any] = us_resp.json()
             assert set(data.keys()) >= _US_OUT_KEYS, (
                 f"Missing keys: {_US_OUT_KEYS - set(data.keys())}"
             )
@@ -94,6 +90,7 @@ class TestUserStoriesCrud:
             assert isinstance(data["version"], int) and data["version"] >= 1, (
                 f"Unexpected version: {data['version']!r}"
             )
+
             allure.attach(
                 json.dumps(data, indent=2),
                 name="Created User Story",
@@ -113,32 +110,29 @@ class TestUserStoriesCrud:
         _PAYLOADS,
         ids=[p["subject"][:40] for p in _PAYLOADS],
     )
-    def test_create_user_story_valid_payloads_returns_201(
+    def test_create_user_story_parametrized_returns_201(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
         delete_user_story: Callable[[int], None],
         payload: dict[str, Any],
     ) -> None:
-        cfg = taiga_config
         body = {**payload, "project": cfg.project_id}
 
         with allure.step(f"POST user story: {payload['subject']!r}"):
-            resp = taiga_session.post(
-                f"{cfg.base_url}/userstories",
-                json=body,
-                timeout=10,
-            )
+            new_us_response = API(cfg, taiga_session).post_user_story(body)
 
         with allure.step("Assert 201 and response contract"):
-            assert resp.status_code == 201, resp.text
-            data: dict[str, Any] = resp.json()
+            assert new_us_response.status_code == 201
+
+            data: dict[str, Any] = new_us_response.json()
             assert set(data.keys()) >= _US_OUT_KEYS, (
                 f"Missing keys: {_US_OUT_KEYS - set(data.keys())}"
             )
             assert data["subject"] == payload["subject"], (
                 f"Subject mismatch: {data['subject']!r} != {payload['subject']!r}"
             )
+
             allure.attach(
                 json.dumps(data, indent=2),
                 name="Created User Story",
@@ -153,23 +147,20 @@ class TestUserStoriesCrud:
     @allure.story("CRUD")
     def test_create_user_story_without_auth_returns_401(
         self,
-        taiga_config: Config,
+        cfg: Config,
     ) -> None:
-        cfg = taiga_config
+        body = {"project": cfg.project_id, "subject": "No-auth story"}
 
         with allure.step("POST user story without auth header"):
-            resp = requests.post(
-                f"{cfg.base_url}/userstories",
-                json={"project": cfg.project_id, "subject": "No-auth story"},
-                timeout=10,
-            )
+            new_us_response = API(cfg, None).post_user_story(body)
 
         with allure.step("Assert 401 and error message"):
-            assert resp.status_code == 401, resp.text
-            body: dict[str, Any] = resp.json()
-            assert "_error_message" in body, f"Unexpected 401 body shape: {body}"
-            assert "Authentication credentials were not provided." in body["_error_message"], (
-                f"Unexpected _error_message: {body['_error_message']!r}"
+            assert new_us_response.status_code == 401
+
+            response_body: dict[str, Any] = new_us_response.json()
+            assert "_error_message" in response_body, f"Unexpected 401 body shape: {response_body}"
+            assert "Authentication credentials were not provided." in response_body["_error_message"], (
+                f"Unexpected _error_message: {response_body['_error_message']!r}"
             )
 
     @pytest.mark.regression
@@ -178,22 +169,19 @@ class TestUserStoriesCrud:
     def test_create_user_story_missing_subject_returns_400(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
     ) -> None:
-        cfg = taiga_config
+        body = {"project": cfg.project_id}
 
         with allure.step("POST user story without required subject field"):
-            resp = taiga_session.post(
-                f"{cfg.base_url}/userstories",
-                json={"project": cfg.project_id},
-                timeout=10,
-            )
+            new_us_response = API(cfg, taiga_session).post_user_story(body)
 
         with allure.step("Assert 400 and subject error key"):
-            assert resp.status_code == 400, resp.text
-            body: dict[str, Any] = resp.json()
-            assert "subject" in body, (
-                f"Expected 'subject' key in error body, got: {body}"
+            assert new_us_response.status_code == 400
+
+            response_body: dict[str, Any] = new_us_response.json()
+            assert "subject" in response_body, (
+                f"Expected 'subject' key in error body, got: {response_body}"
             )
 
     @pytest.mark.regression
@@ -202,22 +190,19 @@ class TestUserStoriesCrud:
     def test_get_user_story_detail_returns_200_with_contract(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
         created_user_story: dict[str, Any],
         delete_user_story: Callable[[int], None],
     ) -> None:
-        cfg = taiga_config
         story = created_user_story
         story_id = story["id"]
 
         with allure.step(f"GET user story detail for id={story_id}"):
-            resp = taiga_session.get(
-                f"{cfg.base_url}/userstories/{story_id}",
-                timeout=10,
-            )
+            resp = API(cfg, taiga_session).get_us_by_id(story_id)
 
         with allure.step("Assert 200 and full contract"):
-            assert resp.status_code == 200, resp.text
+            assert resp.status_code == 200
+
             data: dict[str, Any] = resp.json()
             assert set(data.keys()) >= _US_OUT_KEYS, (
                 f"Missing keys: {_US_OUT_KEYS - set(data.keys())}"
@@ -236,31 +221,27 @@ class TestUserStoriesCrud:
     def test_patch_user_story_with_current_version_returns_200(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
         created_user_story: dict[str, Any],
         delete_user_story: Callable[[int], None],
     ) -> None:
-        cfg = taiga_config
         story_id = created_user_story["id"]
         new_subject = f"Updated subject {uuid.uuid4().hex[:6]}"
 
         with allure.step("Fetch current version for OCC"):
-            detail_resp = taiga_session.get(
-                f"{cfg.base_url}/userstories/{story_id}",
-                timeout=10,
-            )
+            detail_resp = API(cfg, taiga_session).get_us_by_id(story_id)
             assert detail_resp.status_code == 200, detail_resp.text
+
             current_version: int = detail_resp.json()["version"]
 
         with allure.step(f"PATCH user story with version={current_version}"):
-            patch_resp = taiga_session.patch(
-                f"{cfg.base_url}/userstories/{story_id}",
-                json={"version": current_version, "subject": new_subject},
-                timeout=10,
-            )
+            body = {"version": current_version, "subject": new_subject}
+
+            patch_resp = API(cfg, taiga_session).patch_us_by_id(story_id, body)
 
         with allure.step("Assert 200 and OCC version increment"):
-            assert patch_resp.status_code == 200, patch_resp.text
+            assert patch_resp.status_code == 200
+
             patch_data: dict[str, Any] = patch_resp.json()
             assert set(patch_data.keys()) >= _US_OUT_KEYS, (
                 f"Missing keys: {_US_OUT_KEYS - set(patch_data.keys())}"
@@ -281,19 +262,17 @@ class TestUserStoriesCrud:
     def test_delete_user_story_returns_204_and_confirms_404(
         self,
         taiga_session: requests.Session,
-        taiga_config: Config,
+        cfg: Config,
         created_user_story: dict[str, Any],
-        delete_user_story: Callable[[int], None],
     ) -> None:
-        cfg = taiga_config
         story_id = created_user_story["id"]
 
-        with allure.step(f"DELETE user story id={story_id} (asserts 204 internally)"):
-            delete_user_story(story_id)
+        with allure.step(f"DELETE user story id={story_id}"):
+            resp = API(cfg, taiga_session).delete_us_by_id(story_id)
+
+        with allure.step("Assert 204"):
+            assert resp.status_code == 204
 
         with allure.step("Confirm story no longer exists via GET -> 404"):
-            confirm_resp = taiga_session.get(
-                f"{cfg.base_url}/userstories/{story_id}",
-                timeout=10,
-            )
+            confirm_resp = API(cfg, taiga_session).get_us_by_id(story_id)
             assert confirm_resp.status_code == 404
