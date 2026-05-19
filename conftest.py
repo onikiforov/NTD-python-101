@@ -1,8 +1,6 @@
 import json
 import logging
 import uuid
-from pathlib import Path
-
 import pytest
 import requests
 
