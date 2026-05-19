@@ -26,11 +26,6 @@ def logger_settings() -> None:
     logging.getLogger("requests").propagate = False
 
 
-@pytest.fixture(scope="session")
-def taiga_config():
-    return load_config()
-
-
 def log_response_hook(
     response: requests.Response, *_args: object, **_kwargs: object
 ) -> None:
