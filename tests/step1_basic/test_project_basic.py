@@ -2,7 +2,6 @@ import requests
 
 from tests.step1_basic.base_test import BaseTest
 
-
 class TestProjectBasic(BaseTest):
     def _login(self) -> str:
         resp = requests.post(
