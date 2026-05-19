@@ -204,7 +204,7 @@ requires-dist = [
     { name = "pytest", specifier = ">=8.3" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "requests", specifier = ">=2.34" },
+    { name = "requests", specifier = ">=2.34.2" },
 ]
 
 [[package]]

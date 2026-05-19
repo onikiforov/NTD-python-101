@@ -1,79 +1,59 @@
-import collections.abc
 import logging
-import re
-from pathlib import Path
-
-import allure
 import pytest
 import requests
 
-from config import load_config
+from config import load_config, Config
 
 logger = logging.getLogger(__name__)
 
-_SENSITIVE_KEYS = frozenset({
-    "authorization", "cookie", "set-cookie", "proxy-authorization",
-    "x-auth-token", "x-api-key", "x-csrf-token",
-    "password", "auth_token", "refresh_token", "client_secret",
-})
-_AUTH_RE = re.compile(r"(authorization\s*[:=]\s*)(\S+)", re.IGNORECASE)
-_BEARER_RE = re.compile(r"(Bearer\s+)([a-z0-9._\-]+)", re.IGNORECASE)
 
-
-def _redact_str(s: str) -> str:
-    s = _AUTH_RE.sub(r"\1***", s)
-    s = _BEARER_RE.sub(r"\1***", s)
-    return s
-
-
-def _redact(value: object) -> object:
-    if isinstance(value, str):
-        return _redact_str(value)
-    if isinstance(value, bytes):
-        return _redact_str(value.decode("utf-8", errors="replace")).encode()
-    if isinstance(value, collections.abc.Mapping):
-        return {
-            k: "***" if str(k).lower() in _SENSITIVE_KEYS else _redact(v)
-            for k, v in value.items()
-        }
-    if isinstance(value, (list, tuple)):
-        redacted = [_redact(v) for v in value]
-        return type(value)(redacted)
-    return value
-
-
-class RedactAuthFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        if isinstance(record.msg, str):
-            record.msg = _redact_str(record.msg)
-        if record.args:
-            record.args = _redact(record.args)  # type: ignore[assignment]
-        for key, val in list(record.__dict__.items()):
-            if key.startswith("_") or key in {"msg", "args"}:
-                continue
-            record.__dict__[key] = _redact(val)
-        return True
-
-
-def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
+@pytest.fixture(scope="session", autouse=True)
+def cfg() -> Config:  # noqa: ARG001
     try:
-        load_config()
+        return load_config()
     except (RuntimeError, ValueError) as exc:
         pytest.exit(str(exc), returncode=1)
 
-    Path("logs").mkdir(exist_ok=True)
 
-    redact = RedactAuthFilter()
-    for handler in logging.root.handlers:
-        handler.addFilter(redact)
-
+@pytest.fixture(scope="session", autouse=True)
+def logger_settings() -> None:
+    # Set urllib3 logging level and disable child loggers
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").propagate = False
+
+    # Set requests logging level and disable child loggers
     logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("requests").propagate = False
 
 
-@pytest.fixture(autouse=True)
-def attach_logs_to_allure(caplog: pytest.LogCaptureFixture):
-    with caplog.at_level(logging.DEBUG):
-        yield
-    if caplog.text:
-        allure.attach(caplog.text, name="test-log", attachment_type=allure.attachment_type.TEXT)
+def log_response_hook(
+    response: requests.Response, *_args: object, **_kwargs: object
+) -> None:
+    request_headers = response.request.headers
+
+    if "Authorization" in request_headers.keys():
+        request_headers.pop("Authorization")
+
+    request_data = {
+        "method": response.request.method,
+        "url": response.request.url,
+        "headers": request_headers,
+        "body": response.request.body
+    }
+
+    logger.debug("http_request: " + str(request_data))
+
+    response_data = {
+        "status_code": response.status_code,
+        "elapsed_s": round(response.elapsed.total_seconds(), 3),
+        "headers": response.headers
+    }
+
+    try:
+        body = response.json()
+    except requests.exceptions.JSONDecodeError:
+        body = response.text
+
+    response_data["body"] = body
+
+    logger.debug("http_response: " + str(response_data))
