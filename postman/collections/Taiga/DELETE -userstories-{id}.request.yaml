@@ -1,0 +1,9 @@
+$kind: http-request
+name: DELETE /userstories/{id}
+url: "{{URL}}/userstories/9268117"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 2861861680832530

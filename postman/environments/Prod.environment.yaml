@@ -1,0 +1,12 @@
+name: Prod
+values:
+  - key: URL
+    value: ''
+  - key: username
+    value: ''
+  - key: password
+    value: ''
+  - key: project_id
+    value: ''
+  - key: token
+    value: ''
