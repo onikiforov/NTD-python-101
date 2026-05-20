@@ -1,5 +1,7 @@
 import json
 import logging
+import platform
+import sys
 import uuid
 from pathlib import Path
 
@@ -10,6 +12,21 @@ from config import Config, load_config
 from helpers.api import API
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def allure_environment() -> None:
+    allure_dir = Path(__file__).parent / "allure-results"
+    allure_dir.mkdir(exist_ok=True)
+    props = {
+        "os_platform": platform.machine(),
+        "os_version": platform.platform(),
+        "python_version": sys.version,
+    }
+    env_file = allure_dir / "environment.properties"
+    env_file.write_text(
+        "\n".join(f"{k}={v}" for k, v in props.items()) + "\n"
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
