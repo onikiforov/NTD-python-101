@@ -1,0 +1,12 @@
+$kind: http-request
+name: GET /userstories
+url: "{{URL}}/userstories?project={{project_id}}"
+method: GET
+queryParams:
+  - key: project
+    value: "{{project_id}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 8787490470742
