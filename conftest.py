@@ -1,32 +1,49 @@
 import json
 import logging
 import platform
+import shutil
+import subprocess
 import sys
 import uuid
 from pathlib import Path
+from typing import Generator, Any
 
 import pytest
 import requests
 
 from config import Config, load_config
 from helpers.api import API
+from helpers.tools import clear_allure_results_dir
 
 logger = logging.getLogger(__name__)
 
+ALLURE_RESULTS = Path(__file__).parent / "allure-results"
+ALLURE_REPORT = Path(__file__).parent / "allure-report"
+
 
 @pytest.fixture(scope="session", autouse=True)
-def allure_environment() -> None:
-    allure_dir = Path(__file__).parent / "allure-results"
-    allure_dir.mkdir(exist_ok=True)
+def allure_environment() -> Generator[None, Any, None]:
     props = {
         "os_platform": platform.machine(),
         "os_version": platform.platform(),
         "python_version": sys.version,
     }
-    env_file = allure_dir / "environment.properties"
+    ALLURE_RESULTS.mkdir(exist_ok=True)
+    clear_allure_results_dir(ALLURE_RESULTS)
+    env_file = ALLURE_RESULTS / "environment.properties"
     env_file.write_text(
         "\n".join(f"{k}={v}" for k, v in props.items()) + "\n"
     )
+    yield
+    subprocess.run(
+        ["allure", "generate", str(ALLURE_RESULTS), "-o", str(ALLURE_REPORT), "--clean"],
+        check=True,
+    )
+    history_src = ALLURE_REPORT / "history"
+    history_dst = ALLURE_RESULTS / "history"
+    if history_dst.exists():
+        shutil.rmtree(history_dst)
+    shutil.copytree(history_src, history_dst)
 
 
 @pytest.fixture(scope="session", autouse=True)
