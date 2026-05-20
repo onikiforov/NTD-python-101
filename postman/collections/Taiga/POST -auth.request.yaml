@@ -1,0 +1,21 @@
+$kind: http-request
+name: POST /auth
+url: "{{URL}}/auth"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "username": "{{username}}",
+        "password": "{{password}}",
+        "type": "normal"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      var response = pm.response.json();
+      pm.environment.set("token", response.auth_token);
+    language: text/javascript
+order: 1779267305276
