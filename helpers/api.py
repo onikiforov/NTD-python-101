@@ -1,3 +1,5 @@
+import os
+
 import requests
 
 from config import Config
@@ -29,6 +31,7 @@ class API:
                 f"{self.cfg.base_url}/userstories",
                 json=body,
                 timeout=10,
+                verify=self.cfg.ssl_verify if os.getenv("HTTPS_PROXY") is not None else None
             )
 
         return resp
@@ -63,6 +66,7 @@ class API:
             f"{self.cfg.base_url}/auth",
             json=body,
             timeout=10,
+            verify=self.cfg.ssl_verify if os.getenv("HTTPS_PROXY") is not None else None
         )
 
         return resp

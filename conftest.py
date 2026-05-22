@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import platform
 import shutil
 import subprocess
@@ -108,6 +109,11 @@ def taiga_session(cfg: Config) -> requests.Session:
     session = requests.Session()
     session.hooks["response"].append(log_response_hook)
     session.headers["Authorization"] = f"Bearer {resp.json()['auth_token']}"
+
+    # Proxy
+    if os.environ.get("HTTPS_PROXY", None) is not None:
+        session.verify = cfg.ssl_verify # noqa: S4830 "ignore cert check is needed for local proxy"
+
     return session
 
 

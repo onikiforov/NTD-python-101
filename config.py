@@ -9,6 +9,17 @@ class Config:
     username: str
     password: str = field(repr=False)
     project_id: int
+    ssl_verify: bool
+
+
+
+def _strtobool(val: str) -> bool:
+    val = val.lower()
+    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+        return True
+    if val in ('n', 'no', 'f', 'false', 'off', '0'):
+        return False
+    raise ValueError(f"Invalid truth value {val!r}")
 
 
 def load_config() -> Config:
@@ -37,10 +48,13 @@ def load_config() -> Config:
     if not password:
         raise RuntimeError("Password cannot be empty")
 
+    ssl_verify = _strtobool(os.environ.get("SSL_VERIFY", "True"))
+
 
     return Config(
         base_url=base_url,
         username=username,
         password=password,
         project_id=project_id,
+        ssl_verify=ssl_verify
     )
