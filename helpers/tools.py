@@ -19,7 +19,7 @@ def delete_all_us(cfg, taiga_session):
 
 def clear_allure_results_dir(dir_path):
     for item in dir_path.iterdir():
-        if item.name != "history":
+        if "history" not in item.name:
             if item.is_file():
                 item.unlink()
             elif item.is_dir():

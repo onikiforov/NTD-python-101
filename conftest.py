@@ -2,8 +2,6 @@ import json
 import logging
 import os
 import platform
-import shutil
-import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -32,19 +30,9 @@ def allure_environment() -> Generator[None, Any, None]:
     ALLURE_RESULTS.mkdir(exist_ok=True)
     clear_allure_results_dir(ALLURE_RESULTS)
     env_file = ALLURE_RESULTS / "environment.properties"
-    env_file.write_text(
-        "\n".join(f"{k}={v}" for k, v in props.items()) + "\n"
-    )
+    with open(env_file, "w") as f:
+        f.write("\n".join(f"{k}={v}" for k, v in props.items()) + "\n")
     yield
-    subprocess.run(
-        ["allure", "generate", str(ALLURE_RESULTS), "-o", str(ALLURE_REPORT), "--clean"],
-        check=True,
-    )
-    history_src = ALLURE_REPORT / "history"
-    history_dst = ALLURE_RESULTS / "history"
-    if history_dst.exists():
-        shutil.rmtree(history_dst)
-    shutil.copytree(history_src, history_dst)
 
 
 @pytest.fixture(scope="session", autouse=True)

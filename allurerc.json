@@ -1,0 +1,5 @@
+{
+  "output": "./allure-results",
+  "historyPath": "./allure-results/allure-history.jsonl",
+  "appendHistory": true
+}
