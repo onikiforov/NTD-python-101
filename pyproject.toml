@@ -11,4 +11,5 @@ dependencies = [
     "jsonschema>=4.23",
     "pydantic>=2.7",
     "pylint>=4.0.5",
+    "pytest-random-order>=1.2.0",
 ]
